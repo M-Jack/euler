@@ -1,32 +1,11 @@
 
-
+import scala.io.Source
 import scala.annotation.tailrec
 
+
+
 object Problems {
-  val probList= List(
-    problem1 _ 
-      ,problem2 _
-      ,problem3 _
-      ,problem4 _
-      ,problem5 _
-      ,problem6 _
-      ,problem7 _
-      ,problem8 _
-      ,problem9 _
-      ,problem10 _
-      ,problem11 _
-      ,problem12 _
-      ,problem13 _
-      ,problem14 _
-      ,problem15 _
-      ,problem16 _
-      ,problem17 _
-      ,problem18 _
-      ,problem19 _
-      ,problem20 _
-      ,problem21 _
-      
-  )
+  val probList= getClass.getMethods().filter(_.getName.startsWith("problem")).sortBy(_.getName.substring(7).toInt).map( meth => (() => meth.invoke(this).asInstanceOf[Unit]))
   def main(args: Array[String]) = {
     args.toList match {
       case List() => probList.foreach(_())
@@ -386,5 +365,159 @@ object Problems {
 
 
   }
+
+  def problem22{
+    val file = Source.fromFile("../names.txt").mkString
+    val list = file.split(",").toList.map(x => x.replaceAll("\"",""))
+    def value(name : String) = name.toList.map(x => (x-'A').toInt+1).sum
+    val solution = list.sorted.map(value(_)).zipWithIndex.map{case (x, y) => BigInt(x*y + x)}.sum
+    println(solution)
+  }
+
+  def problem23{
+    def isAbundant(int : Int) = (1 to int-1).filter(int % _ == 0).sum > int
+    val listOfAbundant = (1 to 28123).filter(isAbundant(_)).toList
+    def isSum(int: Int) = {
+      def search(bigger: List[Int], smaller: List[Int]): Boolean = (bigger, smaller) match {
+        case (Nil, _) => false
+        case (_, Nil) => false
+        case (x :: xs, y::ys) =>
+          if(x + y== int) true
+          else if(x + y > int) search(bigger, ys)
+          else search(xs, smaller)
+      }
+      search(listOfAbundant, listOfAbundant.reverse)
+    }
+    val solution = (1 to  28123).filter(!isSum(_)).sum
+    println(solution)
+
+  }
+
+  def problem24{
+    def findPerm(index: BigInt, remaining : List[Int]) : List[Int] = {
+      def fac(x : Int)= {
+        def facRec(x: Int, acc: BigInt) : BigInt = if(x == 0) acc else facRec(x-1, x*acc)
+        facRec(x, 1)
+      }
+      def dropIndex[T](ls: List[T], index: BigInt) = {
+        val (p1, p2) = ls splitAt index.toInt
+        p1 ::: p2.tail
+      }
+      if(remaining.size == 1) remaining
+      else {
+        val jump = fac(remaining.size -1)
+        println(jump)
+        remaining((index / jump).toInt) :: findPerm(index % jump , dropIndex(remaining, index / jump))
+      }
+    }
+    val solution = findPerm(BigInt(1000000 - 1) , (0 to 9).toList)
+    println(solution)
+
+
+
+
+  }
+  def problem25{
+    def find(previous: BigInt, before: BigInt, term: Int): Int = if(previous.toString.toList.size == 1000) term else find(previous + before, previous, term +1)
+    val solution = find(1,0, 1)
+    println(solution)
+  }
+
+  def problem26{
+    def fracCycle(d : Int) : Int = {
+      def rec(fd: Int) : Int = if((BigInt(10).pow(fd) -1) % d == 0) fd else rec(fd+1)
+      rec(1)
+    }    
+    val solution =(1 to 1000).filterNot(x => x % 5 == 0 || x % 2 == 0).map(x => (x, fracCycle(x))).maxBy(_._2)._1
+    println(solution)
+  }
+
+  def problem27{
+    
+    def poly(a: Int, b: Int): Int => Int = x => x*x +a *x +b
+    def numOfPrime( f: Int => Int): Int = {
+      def rec(i: Int):Int = if(isPrime(f(i))) rec(i+1) else i
+      rec(0)
+    }
+    def isPrime(x : Int) = {
+      def rec(i : Int): Boolean = {
+        if (i*i > x) true
+        else if(x %i == 0) false
+        else rec(i+1)
+      }
+      if(x<2) false 
+      else rec(2)
+    }
+    println(numOfPrime(poly(1, 41)))
+    val solution = (for(a <- -999 to 999; b <- -999 to 999) yield (a * b, numOfPrime(poly(a,b)))).maxBy(_._2)._1
+    println(solution)
+  }
+
+  def problem28{
+    def sumInNbTurn(nbTurn: BigInt) = (16 * nbTurn * nbTurn * nbTurn + 26 * nbTurn )/ 3 + 10 * nbTurn * nbTurn + 1
+    val solution = sumInNbTurn(500)
+    println(solution)
+  }
+  def problem29{
+    val solution = (2 to 100).flatMap( x => (2 to 100).map((x, _))).map(x => BigInt(x._1).pow(x._2)).distinct.size
+    println(solution)
+  }
+
+  def problem30{
+    def isGood(x : Int) = x.toString.toList.map(_.asDigit).map(BigInt(_).pow(5)).sum.toInt == x
+    val solution = (2 to 999999).filter(isGood).sum
+    println(solution)
+
+  }
+
+
+  def problem31{
+    def find(poss: List[Int], goal: Int): List[List[Int]] = poss match {
+      case Nil => List(List(goal))
+      case x :: xs => for(num <- (0 to goal/x).toList; next<- find( xs, goal - num * x)) yield num :: next
+    }
+    val solution = find(List(200, 100, 50, 20, 10, 5, 2), 200)
+    println(solution.size)
+
+
+  }
+
+  def problem32{
+    def panDigital(x: Int, y: Int, z: Int) = List(x,y,z).flatMap(_.toString.toList.map(_.asDigit)).sorted.sameElements((1 to 9))
+    def quickCheck(x: Int, y: Int) = {
+      val list = x.toString.toList ::: y.toString.toList
+      list.forall(el => list.count(_ == el) == 1)
+    }
+    def solutions = for(x <- 1 to 9876; y <- 1 to x-1; if quickCheck(x, y); if panDigital(x,y,x*y)) yield x*y
+    println(solutions.distinct.sum)
+  }
+
+  def problem33{
+    case class Frac(up: Int, down:Int){
+      override def equals(that: Any) = that match{
+        case Frac(tup, tdown) => this.up * tdown == tup * this.down
+        case _ => false
+      }
+      def modify = (1 to 9).toList.flatMap(x => List(Frac(10* up + x, 10 * down + x),Frac(10* x + up, 10 * down + x),Frac(10* x + up, 10 * x + down),Frac(10* up + x, 10 * x + down)))
+    }
+    val solutions = for( down <- (2 to 9); up <- (1 to down-1); if Frac(up, down).modify.contains(Frac(up, down))) yield Frac(up, down)
+    println(solutions)
+  }
+
+
+  def problem34{
+    lazy val facList : Stream[Int] = (1 #:: facList.zipWithIndex.map{case (x,y)=> x*(y+1)}).take(10)
+    def isGood(x: Int) = x.toString.toList.map(ch => facList(ch.asDigit)).sum == x
+    val solution = (3 to 9999999).filter(isGood).sum    
+    println(solution)
+  }
+
+  def problem35{
+    def getPerm(x: Int) = x.toString.toList.
+    getPerm(12344).foreach(println)
+  }
+
 }
+
+
 
